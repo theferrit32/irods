@@ -447,20 +447,15 @@ int clientLoginOpenID(
     }
     else {
         irods::kvp_map_t ctx_map;
-        std::string client_provider_cfg;
-        try {
-            client_provider_cfg = irods::get_environment_property<std::string&>("openid_provider");
-            ctx_map["provider"] = client_provider_cfg;
+        irods::kvp_map_t client_map;
+        irods::parse_escaped_kvp_string( _context, client_map );
+        if ( client_map.count( "act" ) ) {
+            ctx_map["access_token"] = client_map["act"];
         }
-        catch ( const irods::error& e ) {
-            if ( e.code() == KEY_NOT_FOUND ) {
-                rodsLog( LOG_DEBUG, "openid_provider not defined" );
-            }
-            else {
-                irods::log( e );
-            }
+        if ( client_map.count( "sid" ) ) {
+            ctx_map["session_id"] = client_map["sid"];
         }
-        ctx_map["session_id"] = _context ? _context : "";
+        //ctx_map["session_id"] = _context ? _context : "";
         ctx_map["a_user"] = _comm->proxyUser.userName;
         std::string context_string = irods::escaped_kvp_string( ctx_map );
 
