@@ -375,7 +375,7 @@ int ssl_read_msg( SSL* ssl, std::string& msg_out )
             // no more data
             break;
         }
-        std::cout << "received " + std::to_string( n_bytes ) + " bytes: " + std::string( buffer ) << std::endl;
+        rodsLog( LOG_DEBUG, "received %d bytes: %s", n_bytes, buffer );
         msg.append( buffer );
         total_bytes += n_bytes;
     }
@@ -450,6 +450,7 @@ int clientLoginOpenID(
         std::string client_provider_cfg;
         try {
             client_provider_cfg = irods::get_environment_property<std::string&>("openid_provider");
+            ctx_map["provider"] = client_provider_cfg;
         }
         catch ( const irods::error& e ) {
             if ( e.code() == KEY_NOT_FOUND ) {
@@ -458,9 +459,7 @@ int clientLoginOpenID(
             else {
                 irods::log( e );
             }
-            return e.code();
         }
-        ctx_map["provider"] = client_provider_cfg;
         ctx_map["session_id"] = _context ? _context : "";
         ctx_map["a_user"] = _comm->proxyUser.userName;
         std::string context_string = irods::escaped_kvp_string( ctx_map );
@@ -490,9 +489,8 @@ int clientLoginOpenID(
         }
         int portno = std::stoi( out_map["port"] );
         std::string nonce = out_map["nonce"];
-        std::cout 
-            << "received comm info from server: port: [" + out_map["port"] + "], nonce: [" + out_map["nonce"] + "]"
-            << std::endl;
+        rodsLog( LOG_DEBUG, "received comm info from server: port: [%s], nonce: [%s]",
+            out_map["port"].c_str(), out_map["nonce"].c_str() );
 
         int sockfd;
         struct sockaddr_in serv_addr;
@@ -570,12 +568,11 @@ int clientLoginOpenID(
         // if the auth url is "SUCCESS", session is already authorized, no user action needed
         // debug issue with using empty message as url
         if ( authorization_url_buf.compare( "SUCCESS" ) == 0 ) {
-            std::cout << "Session is valid" << std::endl;
+            rodsLog( LOG_DEBUG, "OpenID session is valid" );
         }
         else {
             // for non reprompt, we just ignore the auth url
-            std::cout << "session information was invalid, received: ["
-                << authorization_url_buf << "]" << std::endl;
+            rodsLog( LOG_ERROR, "session information was invalid, received: [%s]", authorization_url_buf.c_str() );
             return -16;
         }
     }
